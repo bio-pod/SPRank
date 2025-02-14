@@ -1,0 +1,103 @@
+#!/usr/bin/env bash
+image_tag=biopod/sprank:0.0.1
+
+usage() {
+  echo "SPRank Front End Interface" 1>&2
+  echo "version: ${image_tag}" 1>&2
+  echo "Options:" 1>&2
+  echo "-h        show this help message and exit" 1>&2
+  echo "-t        run tests and output to current directory" 1>&2
+  echo "-e        start an environment and mount current directory" 1>&2
+  echo "-r 'cmd'  run specified command" 1>&2
+  echo "-d 'cmd'  run specified command in detach mode" 1>&2
+}
+
+while getopts ":hterd" opt; do
+  case "${opt}" in
+  h)
+    usage
+    exit 0
+    ;;
+  t) test="true" ;;
+  e) env="true" ;;
+  d)
+    detach="true"
+    command=${OPTARG}
+    ;;
+  r)
+    run="true"
+    command=${OPTARG}
+    ;;
+  \?)
+    echo "Error: invalid option -${OPTARG}"
+    usage
+    exit 1
+    ;;
+  :)
+    echo "Error: missing argument for -${OPTARG}"
+    usage
+    exit 1
+    ;;
+  *)
+    usage
+    exit 1
+    ;;
+  esac
+done
+
+option_count=0
+if [ "${test}" == "true" ]; then
+  option_count=$((option_count + 1))
+fi
+if [ "${env}" == "true" ]; then
+  option_count=$((option_count + 1))
+fi
+if [ "${run}" == "true" ]; then
+  option_count=$((option_count + 1))
+fi
+if [ "${detach}" == "true" ]; then
+  option_count=$((option_count + 1))
+fi
+if [ "${option_count}" -ne 1 ]; then
+  echo "Error: one and only one option should be specified!"
+  exit 1
+fi
+
+if [ "${test}" == "true" ]; then
+  echo "Starting one ${image_tag} container environment for tests; Binding /mnt to current dir -> $(pwd)"
+  echo "Results will be saved in current dir -> $(pwd)"
+  docker run --rm -it \
+    --mount type=bind,source="$(realpath "$(pwd)")",target=/mnt \
+    ${image_tag} \
+    /bin/bash -c "cd /app/test/sprank && bash test.sh"
+fi
+
+if [ "${env}" == "true" ]; then
+  echo "Starting one ${image_tag} container environment; Binding /mnt to current dir -> $(pwd)"
+  docker run --rm -it \
+    --mount type=bind,source="$(realpath "$(pwd)")",target=/mnt \
+    --user "$(id -u):$(id -g)" \
+    ${image_tag}
+fi
+
+if [ "${detach}" == "true" ]; then
+  echo "Starting one ${image_tag} container for a detach run; Binding /mnt to current dir -> $(pwd)"
+  echo "To list the ids or names of the running containers, use:"
+  echo "-> docker ps -a"
+  echo "To kill a running container, use:"
+  echo "-> docker kill CONTAINER_ID or docker kill CONTAINER_NAME"
+  docker run --rm -d \
+    --mount type=bind,source="$(realpath "$(pwd)")",target=/mnt \
+    --user "$(id -u):$(id -g)" \
+    ${image_tag} \
+    bash -c "${command}"
+fi
+
+if [ "${run}" == "true" ]; then
+  echo "Starting one ${image_tag} container for a non-detach run; Binding /mnt to current dir -> $(pwd)"
+  docker run --rm \
+    --mount type=bind,source="$(realpath "$(pwd)")",target=/mnt \
+    --user "$(id -u):$(id -g)" \
+    ${image_tag} \
+    bash -c "${command}"
+fi
