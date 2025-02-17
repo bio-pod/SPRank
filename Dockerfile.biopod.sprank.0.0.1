@@ -33,8 +33,8 @@ RUN conda install -y -q -c conda-forge scikit-learn=1.5.0 \
 #                                      matplotlib=3.9.4
 
 # Install SPRank
-COPY ./packages/${VER}/sprank/SPRank.2025.02.13.tar.gz /app/
-RUN tar -xzf SPRank.2025.02.13.tar.gz && rm SPRank.2025.02.13.tar.gz && mv SPRank.2025.02.13 sprank
+COPY ./packages/${VER}/sprank/SPRank.2025.02.17.tar.gz /app/
+RUN tar -xzf SPRank.2025.02.17.tar.gz && rm SPRank.2025.02.17.tar.gz && mv SPRank.2025.02.17 sprank
 RUN cd /app/sprank && make
 RUN chmod -R 777 /app/sprank
 ENV SPRANK_HOME=/app/sprank
